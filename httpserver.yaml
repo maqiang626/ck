@@ -1,0 +1,59 @@
+---
+# Service: httpserver
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: httpserver
+  name: httpserver
+spec:
+  selector:
+    app: httpserver
+  ports:
+  - port: 9001
+    protocol: TCP
+    targetPort: 9001
+
+---
+# Deployment: httpserver
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: httpserver
+  name: httpserver
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: httpserver
+  template:
+    metadata:
+      labels:
+        app: httpserver
+    spec:
+      containers:
+      - name: httpserver
+        image: maqiang626/httpserver:v1.0
+        ports:
+          - containerPort: 9001
+        startupProbe:
+          tcpSocket:
+            port: 9001
+          initialDelaySeconds: 30
+          periodSeconds: 8
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 9001
+          initialDelaySeconds: 90
+          periodSeconds: 60
+          successThreshold: 1
+          failureThreshold: 5
+        resources:
+          requests:
+            cpu: "300m"
+            memory: "300Mi"
+          limits:
+            cpu: "900m"
+            memory: "900Mi"
