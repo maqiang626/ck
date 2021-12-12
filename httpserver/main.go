@@ -3,9 +3,11 @@ package main
 import (
 	"fmt"
 	"io"
+	"math/rand"
 	"net"
 	"net/http"
 	"os"
+	"time"
 )
 
 type ResponseWithRecorder struct {
@@ -22,7 +24,11 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("entering rootHandler...")
 	fmt.Fprintf(w, "Hello\n")
 
-	// 1.接收客户端 request，并将 request 中带的 header 写入 response header
+	// 1. 为 HTTPServer 添加 0-2 秒的随机延时
+	rand.Seed(time.Now().UnixNano())
+	delayed := rand.Intn(2000)
+	time.Sleep(time.Duration(delayed) * time.Millisecond)
+
 	for name, values := range r.Header {
 		for _, value := range values {
 			w.Header().Add(name, value)
@@ -30,11 +36,9 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// 2.读取当前系统的环境变量中的 VERSION 配置，并写入 response header
 	var VERSION string = os.Getenv("VERSION")
 	io.WriteString(w, fmt.Sprintf("VERSION: %s\n", VERSION))
 
-	// 3.Server 端记录访问日志包括客户端 IP，HTTP 返回码，输出到 server 端的标准输出
 	wc := &ResponseWithRecorder{
 		ResponseWriter: w,
 		statusCode:     http.StatusOK,
@@ -46,7 +50,6 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("IP: %s\n", addr)
 }
 
-// 4.当访问 localhost/healthz 时，应返回200
 func healthzHandler(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, "200\n")
 }
